@@ -101,17 +101,14 @@ class Obj:
         l = math.dist(p1, p2)
 
         self.pos += speed * self.direction
+        self.pos = max(0, min(self.pos, l))
 
         canvas.moveto(self.visual, *self.get_lefttop())
 
         if self.direction == 1 and self.pos >= l:
-            self.pos = l
-            if not self.isPlayer:
-                self.switch_rail(n2)
+            self.switch_rail(n2)
         if self.direction == -1 and self.pos <= 0.0:
-            self.pos = 0.0
-            if not self.isPlayer:
-                self.switch_rail(n1)
+            self.switch_rail(n1)
 
 
     def switch_rail(self, node_id):
@@ -121,10 +118,9 @@ class Obj:
             return
         new_edge, new_dir = random.choice(links)
         self.current_edge = new_edge
-        self.direction = new_dir
+        self.direction = 0 if self.isPlayer else new_dir
         p1, p2 = get_nodes(new_edge)
         self.pos = 0.0 if new_dir == 1 else math.dist(p1, p2)
-
 
 
 def debug_draw():
@@ -139,8 +135,8 @@ debug_draw()
 
 objects = [Obj(True, canvas.create_arc(0, 0, size, size, fill='yellow', start=45, extent=270))]
 
-for i in range(2):
-    clr = random.choice(['red', 'blue', 'magenta'])
+for i in range(3):
+    clr = ['red', 'blue', 'magenta'][i % 3]
     objects.append(Obj(False, canvas.create_arc(0, 0, size, size, fill=clr, start=-15, extent=210)))
 
 
