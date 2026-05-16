@@ -42,7 +42,14 @@ edges = [
 ]
 
 
-def get_nodes(edge_idx:int):
+def get_nodes(edge_idx:int, reverse:bool=False):
+    n1, n2 = edges[edge_idx]
+    if reverse:
+        n1, n2 = n2, n1
+    return nodes[n1], nodes[n2]
+
+
+def get_nodes_ex(edge_idx:int):
     n1, n2 = edges[edge_idx]
     return nodes[n1], nodes[n2], n1, n2
 
@@ -51,6 +58,11 @@ def get_links(node_id):
     inc = [(idx, +1) for idx, (n1, _) in enumerate(edges) if n1 == node_id]
     out = [(idx, -1) for idx, (_, n2) in enumerate(edges) if n2 == node_id]
     return inc + out
+
+
+def get_edge_links(edge_idx:int, begin:bool):
+    n1, n2 = edges[edge_idx]
+    return get_links(n1 if begin else n2)
 
 
 def debug_draw(tk_canvas):

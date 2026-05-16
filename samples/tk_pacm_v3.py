@@ -1,14 +1,12 @@
 import tkinter as tk
 import math
 import random
-
 import tk_pacm_v3_map as map
 
-# размеры поля для рисования в пикселях
+
 W = 1200
 H = 850
 
-# инициализация TKinter, тут можно ничего не менять
 root = tk.Tk()
 canvas = tk.Canvas(root, width=W, height=H, bg='white')
 canvas.pack(side='top', fill='both', expand=True)
@@ -17,6 +15,7 @@ size = 100
 speed = 10
 tick_dur = 40
 
+next_move = None
 
 class Obj:
     def __init__(self, isPlayer:bool, visual):
@@ -28,23 +27,37 @@ class Obj:
         canvas.moveto(self.visual, *self.get_lefttop())
 
     def get_lefttop(self):
-        p1, p2, _, _ = map.get_nodes(self.current_edge)
+        p1, p2 = map.get_nodes(self.current_edge)
         l = math.dist(p1, p2)
         t = self.pos / l
         x = p1[0] * (1.0 - t) + t * p2[0]
         y = p1[1] * (1.0 - t) + t * p2[1]
         return x - (size // 2), y - (size // 2)
-    
 
     def move_key(self, dx, dy):
-        if dx < 0: # tmp
-            self.direction = -1
-        if dx > 0: # tmp
-            self.direction = +1
+        if self.direction != 0:
+            p1, p2 = map.get_nodes(self.current_edge, self.direction == -1)
+            rx, ry = p2[0] - p1[0], p2[1] - p1[1]
+            if dx * rx + dy * ry < 0:
+                self.direction = -self.direction
+                return True
+            return False
+        
+        if self.direction == 0:
+            for edge_idx, dir in map.get_edge_links(self.current_edge, self.pos == 0.0):
+                p1, p2 = map.get_nodes(edge_idx, dir == -1)
+                l = math.dist(p1, p2)
+                rx, ry = p2[0] - p1[0], p2[1] - p1[1]
+                if dx * rx + dy * ry > 0.5 * l:
+                    self.current_edge = edge_idx
+                    self.direction = dir
+                    self.pos = 0.0 if dir == 1 else l
+                    return True
+        return False
     
 
     def tick(self):
-        p1, p2, n1, n2 = map.get_nodes(self.current_edge)
+        p1, p2, n1, n2 = map.get_nodes_ex(self.current_edge)
         
         l = math.dist(p1, p2)
 
@@ -60,14 +73,14 @@ class Obj:
 
 
     def switch_rail(self, node_id):
-        links = map.get_links(node_id)
+        links = map.get_links(node_id, )
         if len(links) == 0:
             self.direction = 0 if self.isPlayer else -self.direction
             return
         new_edge, new_dir = random.choice(links)
         self.current_edge = new_edge
         self.direction = 0 if self.isPlayer else new_dir
-        p1, p2, _, _ = map.get_nodes(new_edge)
+        p1, p2 = map.get_nodes(new_edge)
         self.pos = 0.0 if new_dir == 1 else math.dist(p1, p2)
 
 
@@ -80,19 +93,23 @@ for i in range(3):
     objects.append(Obj(False, canvas.create_arc(0, 0, size, size, fill=clr, start=-15, extent=210)))
 
 
-# обработка события "нажата кнопка"
 def on_key(event):
-    if event.keysym == 'a':
-        objects[0].move_key(-1, 0)
+    global next_move
+    move_keys = {'a' : (-1, 0), 'd': (+1, 0), 'w': (0, -1), 's': (0, +1)}
+    if event.keysym in move_keys:
+        next_move = move_keys[event.keysym]
 
-    if event.keysym == 'd':
-        objects[0].move_key(+1, 0)
 
 def tick():
     canvas.after(tick_dur, tick)
 
     for o in objects:
         o.tick()
+    
+    global next_move
+    if next_move is not None:
+        if objects[0].move_key(*next_move):
+            next_move = None
 
 
 root.bind('<Key>', on_key)
