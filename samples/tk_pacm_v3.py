@@ -33,11 +33,7 @@ class Obj:
         canvas.moveto(self.visual, *self.get_lefttop())
 
     def get_lefttop(self):
-        p1, p2 = map.get_nodes(self.current_edge)
-        l = math.dist(p1, p2)
-        t = self.pos / l
-        x = p1[0] * (1.0 - t) + t * p2[0]
-        y = p1[1] * (1.0 - t) + t * p2[1]
+        x, y = self.get_center()
         return x - (size // 2), y - (size // 2)
 
     def get_center(self):
@@ -48,12 +44,27 @@ class Obj:
         y = p1[1] * (1.0 - t) + t * p2[1]
         return x, y
 
+    def redraw_visual(self, p1, p2):
+        x, y = self.get_lefttop()
+        st = 0
+        if p1[0] < p2[0]:
+            st = 45
+        if p1[0] > p2[0]:
+            st = 225
+        if p1[1] < p2[1]:
+            st = 315
+        if p1[1] > p2[1]:
+            st = 135
+        canvas.delete(self.visual)
+        self.visual = canvas.create_arc(x, y, x + size, y + size, fill='yellow', start=st, extent=270)
+
     def move_key(self, dx, dy):
         if self.direction != 0:
             p1, p2 = map.get_nodes(self.current_edge, self.direction == -1)
             rx, ry = p2[0] - p1[0], p2[1] - p1[1]
             if dx * rx + dy * ry < 0:
                 self.direction = -self.direction
+                self.redraw_visual(p2, p1)
                 return True
             return False
 
@@ -66,25 +77,25 @@ class Obj:
                     self.current_edge = edge_idx
                     self.direction = dir
                     self.pos = 0.0 if dir == 1 else l
+                    self.redraw_visual(p1, p2)
                     return True
         return False
 
 
     def tick(self):
-        if self.isDead == False:
-            p1, p2, n1, n2 = map.get_nodes_ex(self.current_edge)
+        p1, p2, n1, n2 = map.get_nodes_ex(self.current_edge)
 
-            l = math.dist(p1, p2)
+        l = math.dist(p1, p2)
 
-            self.pos += speed * self.direction
-            self.pos = max(0, min(self.pos, l))
+        self.pos += speed * self.direction
+        self.pos = max(0, min(self.pos, l))
 
-            canvas.moveto(self.visual, *self.get_lefttop())
+        canvas.moveto(self.visual, *self.get_lefttop())
 
-            if self.direction == 1 and self.pos >= l:
-                self.switch_rail(n2)
-            if self.direction == -1 and self.pos <= 0.0:
-                self.switch_rail(n1)
+        if self.direction == 1 and self.pos >= l:
+            self.switch_rail(n2)
+        if self.direction == -1 and self.pos <= 0.0:
+            self.switch_rail(n1)
 
     def collide_with_balls(self):
         p = self.get_center()
@@ -137,24 +148,25 @@ def on_key(event):
 
 
 def tick():
-    canvas.after(tick_dur, tick)
+    if objects[0].isDead == False:
+        canvas.after(tick_dur, tick)
 
-    objects[0].collide_with_balls()
+        objects[0].collide_with_balls()
     
-    for o in objects:
-        o.tick()
+        for o in objects:
+            o.tick()
 
-    for ghost in objects[1:]:
-        c = ghost.get_center()
-        pos = objects[0].get_center()
-        if math.dist(c, pos) <= size // 3:
-            canvas.create_text(W // 2, H // 2, fill="red", text="GAME OVER")
-            objects[0].isDead = True
+        for ghost in objects[1:]:
+            c = ghost.get_center()
+            pos = objects[0].get_center()
+            if math.dist(c, pos) <= size // 3:
+                canvas.create_text(W // 2, H // 2, fill="red", text="GAME OVER")
+                objects[0].isDead = True
 
-    global next_move
-    if next_move is not None:
-        if objects[0].move_key(*next_move):
-            next_move = None
+        global next_move
+        if next_move is not None:
+            if objects[0].move_key(*next_move):
+                next_move = None
 
 
 root.bind('<Key>', on_key)
