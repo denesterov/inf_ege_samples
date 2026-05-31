@@ -1,5 +1,6 @@
 import tkinter as tk
 import math
+import random
 
 WIDTH, HEIGHT = 1200, 700
 X0, Y0 = -10.0, -10.0
@@ -21,6 +22,9 @@ def draw_circle(x, y, r, fill, outline):
 def draw_line(p1, p2, color):
     return canvas.create_line(*to_screen(*p1), *to_screen(*p2), fill=color)
 
+def draw_path(points, color):
+    canvas.create_line([to_screen(x, y) for x, y in points], fill=color)
+
 def trace(source, vel):
     x, y = source[0], source[1]
     ax, ay = 0.0, -9.81
@@ -28,6 +32,7 @@ def trace(source, vel):
     t = 0.0
     dt = 0.1
     hist = [(x, y)]
+    min_tgt_dist = math.dist((x, y), target)
     while y >= 0.0 and t < 10.0:
         vx += ax * dt
         vy += ay * dt
@@ -51,13 +56,15 @@ def trace(source, vel):
                         vy = +abs(vy)
                         y = y1
 
-        if math.dist(target, (x, y)) < target_radius:
-            return True, hist
+        tgt_dist = math.dist(target, (x, y))
+        min_tgt_dist = min(min_tgt_dist, tgt_dist)
+        if tgt_dist < target_radius:
+            return True, 0, hist
 
         if math.dist(hist[-1], (x, y)) >= 0.5:
             hist.append((x, y))
 
-    return False, hist
+    return False, min_tgt_dist, hist
 
 
 boxes = [ # xmin, ymin, xmax, ymax
@@ -76,8 +83,36 @@ draw_circle(*target, target_radius, 'red', 'white')
 draw_line((source[0] - 2.0, source[1]), (source[0] + 2.0, source[1]), 'white')
 draw_line((source[0], source[1] - 2.0), (source[0], source[1] + 2.0), 'white')
 
-hit, hist = trace(source, (15.0, 27.5))
-for x, y in hist:
-    draw_circle(x, y, 0.1, 'gray', 'red' if hit else 'white')
+def random_arr(dim1, dim2):
+    return [[random.random() for _ in range(dim2)] for _ in range(dim1)]
+
+linksA = random_arr(2, 10)
+linksB = random_arr(10, 10)
+linksC = random_arr(10, 2)
+
+def calc_forward(inp: list[float]):
+    layer1 = [0.0 for _ in linksA[0]]
+    for i, inp_i in enumerate(inp):
+        for j, waj in enumerate(linksA[i]):
+            layer1[j] += inp_i * waj
+
+    layer2 = [0.0 for _ in linksB[0]]
+    for i, l1 in enumerate(layer1):
+        for j, wbj in enumerate(linksB[i]):
+            layer2[j] += l1 * wbj
+
+    out = [0.0 for _ in linksC[0]]
+    for i, l1 in enumerate(layer2):
+        for j, wcj in enumerate(linksC[i]):
+            out[j] += l1 * wcj
+    return out
+
+
+hit, min_dist, hist = trace(source, (15.0, 27.5))
+
+draw_path(hist, 'red' if hit else 'white')
+
+out = calc_forward([10.0, 10.0])
+print(out)
 
 root.mainloop()
