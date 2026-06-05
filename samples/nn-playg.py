@@ -32,7 +32,7 @@ def trace(source, vel):
     ax, ay = 0.0, -9.81
     vx, vy = vel
     t = 0.0
-    dt = 0.1
+    dt = 0.05
     travel = 0.0
     hist = [(x, y)]
     min_tgt_dist = math.dist((x, y), target)
@@ -145,22 +145,28 @@ class Net:
         return obj
 
 
-hit, min_dist, travel, traj = trace(source, (15.0, 26.5))
-
+# hit, min_dist, travel, traj = trace(source, (15.0, 26.5))
 # draw_path(traj, 'red' if hit else 'white')
 
 nn = Net()
-out = nn.calc_forward(target)
-print(f'Initial output: {out}')
-hit, min_dist, travel, traj = trace(source, out)
-print(f'miss: {min_dist}')
+# out = nn.calc_forward(target)
+# print(f'Initial output: {out}')
+# hit, min_dist, travel, traj = trace(source, out)
+# print(f'miss: {min_dist}')
 # draw_path(traj, 'white')
 
-traj_hist = []
 
-for G in range(100):
+traj_hist = []
+gen_index = 0
+
+def tick():
+    global nn, traj_hist, gen_index
+
+    if gen_index < 100:
+        canvas.after(50, tick)
+
     best_try = None
-    best_miss = 0.0
+    best_fun = 0.0
     best_traj, best_out = None, None
     for i in range(20):
         distortion = 0.1 if i >= 10 else 1.0 # todo: make smaller disortions when we are closer to our target
@@ -169,15 +175,21 @@ for G in range(100):
         hit, min_dist, travel, traj = trace(source, out2)
 
         target_fun = min_dist + travel * 0.1
-        if best_try is None or target_fun < best_miss:
+        if best_try is None or target_fun < best_fun:
             best_try = nn2
-            best_miss = target_fun
+            best_fun = target_fun
             best_traj = traj
             best_out = out2
-    print(f'Best miss {G}: {best_miss:.2f}, out: {best_out}')
 
-    draw_path(best_traj, 'gray')
+    print(f'Gen {gen_index}: target_fun {best_fun:.2f}, out: {best_out}')
+    traj_hist.append(draw_path(best_traj, 'gray'))
+    if len(traj_hist) > 30:
+        canvas.delete(traj_hist[0])
+        traj_hist = traj_hist[1:]
 
     nn = best_try
+    gen_index += 1
+
+canvas.after(200, tick)
 
 root.mainloop()
