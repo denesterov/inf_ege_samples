@@ -2,6 +2,7 @@ import tkinter as tk
 import copy
 import math
 import random
+import time
 
 WIDTH, HEIGHT = 1200, 700
 X0, Y0 = -10.0, -10.0
@@ -32,13 +33,16 @@ def trace(source, vel):
     vx, vy = vel
     t = 0.0
     dt = 0.1
+    travel = 0.0
     hist = [(x, y)]
     min_tgt_dist = math.dist((x, y), target)
     while y >= 0.0 and t < 10.0:
         vx += ax * dt
         vy += ay * dt
-        x += vx * dt
-        y += vy * dt
+        dx, dy = vx * dt, vy * dt
+        x += dx
+        y += dy
+        travel += math.sqrt(dx * dx + dy * dy)
 
         for x0, y0, x1, y1 in boxes:
             if x >= x0 and x <= x1 and y >= y0 and y <= y1:
@@ -60,12 +64,12 @@ def trace(source, vel):
         tgt_dist = math.dist(target, (x, y))
         min_tgt_dist = min(min_tgt_dist, tgt_dist)
         if tgt_dist < target_radius:
-            return True, 0, hist
+            return True, 0, travel, hist
 
         if math.dist(hist[-1], (x, y)) >= 0.5:
             hist.append((x, y))
 
-    return False, min_tgt_dist - target_radius, hist
+    return False, min_tgt_dist - target_radius, travel, hist
 
 
 boxes = [ # xmin, ymin, xmax, ymax
@@ -141,14 +145,14 @@ class Net:
         return obj
 
 
-hit, min_dist, traj = trace(source, (15.0, 26.5))
+hit, min_dist, travel, traj = trace(source, (15.0, 26.5))
 
 # draw_path(traj, 'red' if hit else 'white')
 
 nn = Net()
 out = nn.calc_forward(target)
 print(f'Initial output: {out}')
-hit, min_dist, traj = trace(source, out)
+hit, min_dist, travel, traj = trace(source, out)
 print(f'miss: {min_dist}')
 # draw_path(traj, 'white')
 
@@ -159,13 +163,15 @@ for G in range(100):
     best_miss = 0.0
     best_traj, best_out = None, None
     for i in range(20):
-        distortion = 0.1 if i >= 10 else 1.0
+        distortion = 0.1 if i >= 10 else 1.0 # todo: make smaller disortions when we are closer to our target
         nn2 = nn.make_distorted_copy(distortion)
         out2 = nn2.calc_forward(target)
-        hit, min_dist, traj = trace(source, out2)
-        if best_try is None or min_dist < best_miss:
+        hit, min_dist, travel, traj = trace(source, out2)
+
+        target_fun = min_dist + travel * 0.1
+        if best_try is None or target_fun < best_miss:
             best_try = nn2
-            best_miss = min_dist
+            best_miss = target_fun
             best_traj = traj
             best_out = out2
     print(f'Best miss {G}: {best_miss:.2f}, out: {best_out}')
