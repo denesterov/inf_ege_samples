@@ -70,7 +70,7 @@ def trace(source, vel):
 boxes = [ # xmin, ymin, xmax, ymax
     [30, 20, 50, 25],
     [50, 20, 55, 40]
-    ]
+]
 
 target = (40.0, 30.0)
 target_radius = 2.0
@@ -86,33 +86,51 @@ draw_line((source[0], source[1] - 2.0), (source[0], source[1] + 2.0), 'white')
 def random_arr(dim1, dim2):
     return [[random.random() for _ in range(dim2)] for _ in range(dim1)]
 
-linksA = random_arr(2, 10)
-linksB = random_arr(10, 10)
-linksC = random_arr(10, 2)
+def activation(x:float):
+    K = 3
+    return K * x / (1.0 + K * abs(x))
 
-def calc_forward(inp: list[float]):
-    layer1 = [0.0 for _ in linksA[0]]
-    for i, inp_i in enumerate(inp):
-        for j, waj in enumerate(linksA[i]):
-            layer1[j] += inp_i * waj
+class Net:
+    INPUT = 2
+    LAYER1 = 10
+    LAYER2 = 6
+    OUTPUT = 2
 
-    layer2 = [0.0 for _ in linksB[0]]
-    for i, l1 in enumerate(layer1):
-        for j, wbj in enumerate(linksB[i]):
-            layer2[j] += l1 * wbj
+    def __init__(self):
+        # state
+        self.linksA = random_arr(self.LAYER1, self.INPUT)
+        self.linksB = random_arr(self.LAYER2, self.LAYER1)
+        self.linksC = random_arr(self.OUTPUT, self.LAYER2)
 
-    out = [0.0 for _ in linksC[0]]
-    for i, l1 in enumerate(layer2):
-        for j, wcj in enumerate(linksC[i]):
-            out[j] += l1 * wcj
-    return out
+        # saved from last calc
+        self.input = [0.0] * self.INPUT
+        self.layer1 = [0.0] * self.LAYER1
+        self.layer2 = [0.0] * self.LAYER2
+        self.output = [0.0] * self.OUTPUT
+
+
+    def calc_forward(self, inp: list[float]):
+        assert len(inp) == self.INPUT
+        self.input[:] = inp
+        self.layer1[:] = [0.0] * self.LAYER1
+        self.layer2[:] = [0.0] * self.LAYER2
+        self.output[:] = [0.0] * self.OUTPUT
+
+        self.layer1[:] = [activation(sum(input * weight for input, weight in zip(self.input, links))) for links in self.linksA]
+
+        self.layer2[:] = [activation(sum(L1 * weight for L1, weight in zip(self.layer1, links))) for links in self.linksB]
+
+        self.output[:] = [sum(L2 * weight for L2, weight in zip(self.layer2, links)) for links in self.linksC]
+
+        return self.output
 
 
 hit, min_dist, hist = trace(source, (15.0, 27.5))
 
 draw_path(hist, 'red' if hit else 'white')
 
-out = calc_forward([10.0, 10.0])
+nn = Net()
+out = nn.calc_forward([10.0, 20.0])
 print(out)
 
 root.mainloop()
