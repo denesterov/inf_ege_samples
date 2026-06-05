@@ -1,4 +1,5 @@
 import tkinter as tk
+import copy
 import math
 import random
 
@@ -23,7 +24,7 @@ def draw_line(p1, p2, color):
     return canvas.create_line(*to_screen(*p1), *to_screen(*p2), fill=color)
 
 def draw_path(points, color):
-    canvas.create_line([to_screen(x, y) for x, y in points], fill=color)
+    return canvas.create_line([to_screen(x, y) for x, y in points], fill=color)
 
 def trace(source, vel):
     x, y = source[0], source[1]
@@ -64,7 +65,7 @@ def trace(source, vel):
         if math.dist(hist[-1], (x, y)) >= 0.5:
             hist.append((x, y))
 
-    return False, min_tgt_dist, hist
+    return False, min_tgt_dist - target_radius, hist
 
 
 boxes = [ # xmin, ymin, xmax, ymax
@@ -83,8 +84,14 @@ draw_circle(*target, target_radius, 'red', 'white')
 draw_line((source[0] - 2.0, source[1]), (source[0] + 2.0, source[1]), 'white')
 draw_line((source[0], source[1] - 2.0), (source[0], source[1] + 2.0), 'white')
 
-def random_arr(dim1, dim2):
+def random_2d_arr(dim1, dim2):
     return [[random.random() for _ in range(dim2)] for _ in range(dim1)]
+
+def distort_2d_arr(arr, amplitude):
+    for sub_arr in arr:
+        for i in range(len(sub_arr)):
+            sub_arr[i] += 2.0 * (random.random() - 0.5) * amplitude
+
 
 def activation(x:float):
     K = 3
@@ -98,9 +105,9 @@ class Net:
 
     def __init__(self):
         # state
-        self.linksA = random_arr(self.LAYER1, self.INPUT)
-        self.linksB = random_arr(self.LAYER2, self.LAYER1)
-        self.linksC = random_arr(self.OUTPUT, self.LAYER2)
+        self.linksA = random_2d_arr(self.LAYER1, self.INPUT)
+        self.linksB = random_2d_arr(self.LAYER2, self.LAYER1)
+        self.linksC = random_2d_arr(self.OUTPUT, self.LAYER2)
 
         # saved from last calc
         self.input = [0.0] * self.INPUT
@@ -124,13 +131,47 @@ class Net:
 
         return self.output
 
+    def make_distorted_copy(self, ampl):
+        obj = copy.deepcopy(self)
 
-hit, min_dist, hist = trace(source, (15.0, 27.5))
+        distort_2d_arr(obj.linksA, ampl)
+        distort_2d_arr(obj.linksB, ampl)
+        distort_2d_arr(obj.linksC, ampl)
 
-draw_path(hist, 'red' if hit else 'white')
+        return obj
+
+
+hit, min_dist, traj = trace(source, (15.0, 26.5))
+
+# draw_path(traj, 'red' if hit else 'white')
 
 nn = Net()
-out = nn.calc_forward([10.0, 20.0])
-print(out)
+out = nn.calc_forward(target)
+print(f'Initial output: {out}')
+hit, min_dist, traj = trace(source, out)
+print(f'miss: {min_dist}')
+# draw_path(traj, 'white')
+
+traj_hist = []
+
+for G in range(100):
+    best_try = None
+    best_miss = 0.0
+    best_traj, best_out = None, None
+    for i in range(20):
+        distortion = 0.1 if i >= 10 else 1.0
+        nn2 = nn.make_distorted_copy(distortion)
+        out2 = nn2.calc_forward(target)
+        hit, min_dist, traj = trace(source, out2)
+        if best_try is None or min_dist < best_miss:
+            best_try = nn2
+            best_miss = min_dist
+            best_traj = traj
+            best_out = out2
+    print(f'Best miss {G}: {best_miss:.2f}, out: {best_out}')
+
+    draw_path(best_traj, 'gray')
+
+    nn = best_try
 
 root.mainloop()
