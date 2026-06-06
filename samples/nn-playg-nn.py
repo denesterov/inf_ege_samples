@@ -19,6 +19,9 @@ def activation(x:float):
     return K * x / (1.0 + K * abs(x))
 
 
+def lerp_rgb_color(r0, g0, b0, r1, g1, b1, s):
+    return f'#{int(r0 * (1.0-s) + r1 * s):02x}{int(g0 * (1.0-s) + g1 * s):02x}{int(b0 * (1.0-s) + b1 * s):02x}'
+
 class Net:
     INPUT = 2
     LAYER1 = 10
@@ -71,22 +74,31 @@ class Net:
         for o in self.weights_visuals: canvas.delete(o)
         self.weights_visuals = []
 
-        xc = width - 70
-        y_start = 50
+        x_start = width - 150
+        y_start = 30
         row_h = 22
         bar_h = 10
-        bar_w = 10
-        bar_sp = 5
+        bar_w = 2
+        bar_sp = 2
         row_i = 0
+        x_offs = x_start
         for wei in [self.linksA, self.linksB, self.linksC]:
             for ww in wei:
-                row_i += 1
                 for wi, w in enumerate(ww):
-                    w = activation(w)
+                    wa = activation(w)
                     bar_delta = bar_w + bar_sp
-                    x0 = xc - len(wei[0]) * bar_delta // 2 + wi * bar_delta
+                    x0 = x_offs + wi * bar_delta
                     x1 = x0 + bar_w
-                    y0 = y_start + row_h * row_i
-                    y1 = y0 - int(bar_h * w)
-                    id = canvas.create_rectangle(x0, y0, x1, y1, fill='cyan' if w >= 0 else 'blue')
+                    y0 = y_start + row_h * row_i + row_h
+                    y1 = y0 - int(bar_h * wa)
+                    clr_t = min(abs(w) / 10.0, 1.0)
+                    color = lerp_rgb_color(64, 255, 255, 255, 64, 64, clr_t) if w >= 0 else lerp_rgb_color(64, 64, 255, 255, 255, 64, clr_t)
+                    id = canvas.create_rectangle(x0, y0, x1, y1, fill=color, outline=color)
                     self.weights_visuals.append(id)
+
+                if len(ww) > 4 or ww == wei[-1]:
+                    row_i += 1
+                    x_offs = x_start
+                else:
+                    x_offs += (1 + len(ww)) * (bar_w + bar_sp)
+            row_i += 1
