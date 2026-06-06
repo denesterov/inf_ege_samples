@@ -3,6 +3,7 @@ import math
 import random
 import importlib
 nn = importlib.import_module('nn-playg-nn')
+box = importlib.import_module('nn-playg-box')
 
 
 WIDTH, HEIGHT = 1200, 700
@@ -45,22 +46,8 @@ def trace(source, vel):
         y += dy
         travel += math.sqrt(dx * dx + dy * dy)
 
-        for x0, y0, x1, y1 in boxes:
-            if x >= x0 and x <= x1 and y >= y0 and y <= y1:
-                if min(x - x0, x1 - x) < min(y - y0, y1 - y):
-                    if x - x0 < x1 - x:
-                        vx = -abs(vx)
-                        x = x0
-                    else:
-                        vx = +abs(vx)
-                        x = x1
-                else:
-                    if y - y0 < y1 - y:
-                        vy = -abs(vy)
-                        y = y0
-                    else:
-                        vy = +abs(vy)
-                        y = y1
+        for box in boxes:
+            _, x, y, vx, vy = box.point_collide(x, y, vx, vy)
 
         tgt_dist = math.dist(target, (x, y))
         min_tgt_dist = min(min_tgt_dist, tgt_dist)
@@ -73,34 +60,23 @@ def trace(source, vel):
     return False, min_tgt_dist - target_radius, travel, hist
 
 
-boxes = [ # xmin, ymin, xmax, ymax
-    [30, 20, 50, 25],
-    [50, 20, 55, 40]
+boxes = [
+    box.Box(30, 20, 50, 25),
+    box.Box(50, 20, 55, 40),
 ]
 
 target = (40.0, 30.0)
 target_radius = 2.0
 source = (0.0, 0.0)
 
-for x0, y0, x1, y1 in boxes:
-    canvas.create_rectangle(*to_screen(x0, y0), *to_screen(x1, y1), outline='cyan', fill='blue')
+for box in boxes:
+    box.draw(canvas, to_screen)
+
 
 draw_circle(*target, target_radius, 'red', 'white')
 draw_line((source[0] - 2.0, source[1]), (source[0] + 2.0, source[1]), 'white')
 draw_line((source[0], source[1] - 2.0), (source[0], source[1] + 2.0), 'white')
 
-def random_2d_arr(dim1, dim2):
-    return [[random.random() for _ in range(dim2)] for _ in range(dim1)]
-
-def distort_2d_arr(arr, amplitude):
-    for sub_arr in arr:
-        for i in range(len(sub_arr)):
-            sub_arr[i] += 2.0 * (random.random() - 0.5) * amplitude
-
-
-def activation(x:float):
-    K = 3
-    return K * x / (1.0 + K * abs(x))
 
 # hit, min_dist, travel, traj = trace(source, (15.0, 26.5))
 # draw_path(traj, 'red' if hit else 'white')
