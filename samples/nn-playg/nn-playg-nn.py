@@ -107,12 +107,12 @@ class Net:
                     x_offs += (1 + len(ww)) * (bar_w + bar_sp)
             row_i += 1
 
-    def _draw_weight_links(self, canvas, width, start_y):
-        x_center = width - 150
-        y = start_y
+    def _draw_weight_links(self, canvas:tk.Canvas, width:int, start_y:int):
+        y_spacing = 80
+        graph_width = 330
+        x_left = width - 30 - graph_width
 
-        x_spacing = 35
-        y_spacing = 60
+        y = start_y
 
         for wei in [self.linksA, self.linksB, self.linksC]:
             # wei is [outputs x inputs]
@@ -120,8 +120,8 @@ class Net:
             inp_num = len(wei[0])
             for outp_idx, inp_w in enumerate(wei):
                 for inp_idx, w in enumerate(inp_w):
-                    x0 = x_center - (inp_num * x_spacing) // 2 + inp_idx * x_spacing
-                    x1 = x_center - (outp_num * x_spacing) // 2 + outp_idx * x_spacing
+                    x0 = x_left + (inp_idx + 1) * graph_width // (inp_num + 1)
+                    x1 = x_left + (outp_idx + 1) * graph_width // (outp_num + 1)
 
                     clr_t = min(abs(w) / 10.0, 1.0)
                     color = lerp_rgb_color(0, 64, 64, 0, 255, 255, clr_t) if w >= 0 else lerp_rgb_color(64, 0, 0, 255, 0, 0, clr_t)
