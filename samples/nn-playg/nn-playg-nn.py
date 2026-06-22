@@ -28,8 +28,6 @@ class Net:
     LAYER2 = 6
     OUTPUT = 2
 
-    weights_visuals = []
-
 
     def __init__(self):
         # state
@@ -42,6 +40,8 @@ class Net:
         self.layer1 = [0.0] * self.LAYER1
         self.layer2 = [0.0] * self.LAYER2
         self.output = [0.0] * self.OUTPUT
+
+        self.weights_visuals = []
 
 
     def calc_forward(self, inp: list[float]):
@@ -73,7 +73,11 @@ class Net:
     def draw_weights(self, canvas, width, height):
         for o in self.weights_visuals: canvas.delete(o)
         self.weights_visuals = []
+        self._draw_weight_bars(canvas, width)
+        self._draw_weight_links(canvas, width, 330)
 
+
+    def _draw_weight_bars(self, canvas, width):
         x_start = width - 150
         y_start = 30
         row_h = 22
@@ -102,3 +106,25 @@ class Net:
                 else:
                     x_offs += (1 + len(ww)) * (bar_w + bar_sp)
             row_i += 1
+
+    def _draw_weight_links(self, canvas, width, start_y):
+        x_center = width - 150
+        y = start_y
+
+        x_spacing = 35
+        y_spacing = 60
+
+        for wei in [self.linksA, self.linksB, self.linksC]:
+            # wei is [outputs x inputs]
+            outp_num = len(wei)
+            inp_num = len(wei[0])
+            for outp_idx, inp_w in enumerate(wei):
+                for inp_idx, w in enumerate(inp_w):
+                    x0 = x_center - (inp_num * x_spacing) // 2 + inp_idx * x_spacing
+                    x1 = x_center - (outp_num * x_spacing) // 2 + outp_idx * x_spacing
+
+                    clr_t = min(abs(w) / 10.0, 1.0)
+                    color = lerp_rgb_color(0, 64, 64, 0, 255, 255, clr_t) if w >= 0 else lerp_rgb_color(64, 0, 0, 255, 0, 0, clr_t)
+                    id = canvas.create_line(x0, y, x1, y + y_spacing, fill=color,width=2)
+                    self.weights_visuals.append(id)
+            y += y_spacing
