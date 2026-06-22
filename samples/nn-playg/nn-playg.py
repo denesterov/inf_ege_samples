@@ -197,7 +197,8 @@ def tick_learning():
 
 
     debug_text('learning_status', f'Gen {learn_gen_index}: target_fun {best_fun:.2f}, out: {best_out}')
-    traj_hist.append(draw_path(best_traj, 'gray'))
+    if len(best_traj) > 1:
+        traj_hist.append(draw_path(best_traj, 'gray'))
     if len(traj_hist) > 30:
         canvas.delete(traj_hist[0])
         traj_hist = traj_hist[1:]
