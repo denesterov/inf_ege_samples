@@ -5,12 +5,13 @@ nn = importlib.import_module('nn-playg-nn')
 box = importlib.import_module('nn-playg-box')
 
 
-WIDTH, HEIGHT = 1200, 700
+WIDTH, HEIGHT = 1500, 750
 X0, Y0 = -10.0, -10.0
-X1, Y1 = 110.0, 60.0
+X1, Y1 = 130.0, 60.0
 
 root = tk.Tk()
-canvas = tk.Canvas(root, width=WIDTH, height=HEIGHT, bg='black')
+root.geometry(f'{WIDTH}x{HEIGHT}+20+20')
+canvas = tk.Canvas(root, width=WIDTH, height=HEIGHT, bg='black',)
 canvas.pack(side="top", fill="both", expand=True)
 
 debug_texts = {}
@@ -193,6 +194,7 @@ def tick_learning():
             best_fun = target_fun
             best_traj = traj
             best_out = out2
+
 
     debug_text('learning_status', f'Gen {learn_gen_index}: target_fun {best_fun:.2f}, out: {best_out}')
     traj_hist.append(draw_path(best_traj, 'gray'))
