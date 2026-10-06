@@ -1,19 +1,6 @@
 from dataclasses import dataclass
+import tkinter as tk
 
-source = '''
-шаг
-шаг
-если св
-  шаг
-повтор
-  если занято
-    выход
-  шаг
-'''
-
-# если св слева
-# если св справа
-# если св
 
 @dataclass
 class Command:
@@ -66,7 +53,7 @@ class Machine:
         ip: int
         is_cycle: bool
 
-    def __init__(self, sx: int, sy: int):
+    def __init__(self, sx: int, sy: int, field: dict[(int, int), str]):
         self.code = []
         self.size_x = sx
         self.size_y = sy
@@ -74,13 +61,15 @@ class Machine:
         self.y = sy // 2
         self.dir_x = 0
         self.dir_y = 1
-        self.field = dict()
+        self.field = field
         self.is_running = False
 
-    def start(self, code: list[Command]):
+    def start(self, code: list[Command], start_x, start_y):
         self.stack = list[self.StackFrame]()
         self.code = code
         self.ip = 0
+        self.x = start_x
+        self.y = start_y
         self.is_running = True
 
     def step(self):
@@ -99,7 +88,7 @@ class Machine:
                 self.code = frame.code
                 self.ip = frame.ip
 
-        cmd = code[self.ip]
+        cmd = self.code[self.ip]
         if cmd.cmd == 'шаг':
             self.x += self.dir_x
             self.y += self.dir_y
@@ -132,12 +121,83 @@ class Machine:
                     self.ip += 1
 
 
+with open('robot.txt', encoding='utf-8') as f:
+    source = f.read()
+
+with open('robot_field.txt', encoding='utf-8') as f:
+    field = {}
+    fld_height, fld_width = 0, 0
+    start_x, start_y = [int(s) for s in f.readline().split()]
+
+    for ln in f:
+        ln = ln.strip()
+        if ln == '':
+            break
+        for i, c in enumerate(ln):
+            if c == 'X':
+                field[(i, fld_height)] = 'X'
+        fld_height += 1
+        fld_width = max(fld_width, len(ln))
+
+
 code, ln_idx = parse_block([s.lower() for s in source.splitlines()], 0, 0)
 dump_block(code)
 
-m = Machine(10, 10)
-m.start(code)
+M = Machine(fld_width, fld_height, field)
+M.start(code, start_x, start_y)
 
-for i in range(10):
-    print(f'X: {m.x}, Y: {m.y}, DX: {m.dir_x}, DY: {m.dir_y}, Stack len: {len(m.stack)}')
-    m.step()
+
+WIDTH = 1200
+HEIGHT = 800
+
+root = tk.Tk()
+canvas = tk.Canvas(root, width=WIDTH, height=HEIGHT, bg='white')
+canvas.pack(side='top', fill='both', expand=True)
+
+canvas.create_rectangle(50, 50, 1150, 750, fill='lightgray', outline='black')
+
+
+OUTER_MARGIN = 100
+CELL = 50
+MARGIN = 8
+TIME_STEP = 500
+
+rects = {}
+for row in range(fld_height):
+    for column in range(fld_width):
+        x1 = OUTER_MARGIN + column * CELL + MARGIN
+        y1 = OUTER_MARGIN + row * CELL + MARGIN
+        x2 = x1 + CELL - MARGIN
+        y2 = y1 + CELL - MARGIN
+        if field.get((column, row), '') == 'X':
+            fill = 'white'
+        else:
+            fill = 'darkgray'
+        rects[(column, row)] = canvas.create_rectangle(x1, y1, x2, y2, fill=fill, outline='')
+
+
+robot_arr = None
+
+def draw_robot():
+    global robot_arr
+    if robot_arr:
+        canvas.delete(robot_arr)
+
+    rx = OUTER_MARGIN + M.x * CELL
+    ry = OUTER_MARGIN + M.y * CELL
+
+    robot_arr = canvas.create_line(rx + CELL//2, ry + CELL - MARGIN, rx + CELL//2, ry + MARGIN, arrow='last', fill='red', width=2)
+
+
+draw_robot()
+
+
+def tick():
+    print(f'X: {M.x}, Y: {M.y}, DX: {M.dir_x}, DY: {M.dir_y}, Stack len: {len(M.stack)}, Running: {M.is_running}')
+    M.step()
+    canvas.after(TIME_STEP, tick)
+
+
+canvas.after(TIME_STEP, tick)
+
+root.mainloop()
