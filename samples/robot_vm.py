@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-import tkinter as tk
+import enum
 
 
 @dataclass
@@ -99,6 +99,7 @@ class Machine:
         self.dir_y = 1
 
         self.is_running = True
+        self.error_message = None
 
 
     def step(self):
@@ -140,27 +141,57 @@ class Machine:
                     self.ip = self.stack[-1].ip
                 self.stack.pop()
         elif cmd.cmd == 'если':
-            if cmd.args == 'св':
-                test = (self.x + self.dir_x, self.y + self.dir_y)
-                if self.field.get(test, '') != 'X':
-                    self.stack.append(self.StackFrame(self.code, self.ip + 1, False))
-                    self.code = cmd.block
-                    self.ip = 0
-                else:
-                    self.ip += 1
+            dx, dy = (self.dir_x, self.dir_y)
+            if cmd.args == 'св' or cmd.args == 'занято':
+                inverse = cmd.args == 'занято'
+            elif cmd.args == 'св справа' or cmd.args == 'занято справа':
+                dx, dy = -dy, dx
+                inverse = 'занято' in cmd.args
+            elif cmd.args == 'св слева' or cmd.args == 'занято слева':
+                dx, dy = dy, +dx
+                inverse = 'занято' in cmd.args
+            else:
+                self.set_error(f'Unknown if mode {cmd.args}')
+
+            test = (self.x + dx, self.y + dy)
+            cond = self.field.field.get(test, '') != 'X'
+            if inverse:
+                cond = not cond
+            if cond:
+                self.stack.append(self.StackFrame(self.code, self.ip + 1, False))
+                self.code = cmd.block
+                self.ip = 0
+            else:
+                self.ip += 1
 
         self.total_steps += 1
 
 
+    def set_error(self, msg):
+        self.is_running = False
+        self.error_message = msg
+
+
     def debug_status(self):
         coords = f'Pos: ({self.x}, {self.y}), Dir: ({self.dir_x}, {self.dir_y})'
+        if self.ip < len(self.code):
+            line = self.code[self.ip].code_line + 1
+        else:
+            if len(self.code) > 0:
+                line = f'Behind {self.code[-1].code_line + 1}'
+            else:
+                line = f'-'
+
         if self.is_running:
-            return f'{coords}, Stack: {len(self.stack)}, Line: {self.code[self.ip].code_line + 1}, Steps: {self.total_steps}'
+            print(f'{self.ip} / {len(self.code)}')
+            return f'{coords}, Stack: {len(self.stack)}, Line: {line}, Steps: {self.total_steps}'
+        elif self.error_message:
+            return f'Error: {self.error_message}, {coords}, Steps: {self.total_steps}'
         else:
             return f'{coords}, Steps: {self.total_steps}'
 
 
     def get_line_index(self):
-        if self.is_running:
+        if self.is_running and len(self.code) > 0 and self.ip < len(self.code):
             return self.code[self.ip].code_line
         return None

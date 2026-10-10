@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 import tkinter as tk
 import robot_vm
 
@@ -25,7 +24,7 @@ canvas.create_rectangle(50, 50, 1150, 750, fill='lightgray', outline='black')
 
 OUTER_MARGIN = 100
 CELL = 50
-MARGIN = 8
+MARGIN = 5
 TIME_STEP = 500
 
 rects = {}
@@ -33,8 +32,8 @@ for row in range(field.height):
     for column in range(field.width):
         x1 = OUTER_MARGIN + column * CELL + MARGIN
         y1 = OUTER_MARGIN + row * CELL + MARGIN
-        x2 = x1 + CELL - MARGIN
-        y2 = y1 + CELL - MARGIN
+        x2 = x1 + CELL - MARGIN * 2
+        y2 = y1 + CELL - MARGIN * 2
         if field.field.get((column, row), '') == 'X':
             fill = 'white'
         else:
@@ -49,10 +48,13 @@ def draw_robot():
     if robot_arr:
         canvas.delete(robot_arr)
 
-    rx = OUTER_MARGIN + M.x * CELL
-    ry = OUTER_MARGIN + M.y * CELL
+    c2 = CELL // 2
+    c2m = c2 - MARGIN * 2
+    rx, ry = OUTER_MARGIN + M.x * CELL, OUTER_MARGIN + M.y * CELL
+    cx, cy = rx + c2, ry + c2
+    dx, dy = M.dir_x * c2m, M.dir_y * c2m
 
-    robot_arr = canvas.create_line(rx + CELL//2, ry + CELL - MARGIN, rx + CELL//2, ry + MARGIN, arrow='last', fill='red', width=2)
+    robot_arr = canvas.create_line(cx - dx, cy - dy, cx + dx, cy + dy, arrow='last', fill='red', width=4)
 
 
 draw_robot()
@@ -60,13 +62,16 @@ draw_robot()
 
 def tick():
     if M.is_running:
-        M.step()
         print(M.debug_status())
+        li = M.get_line_index()
+        if li:
+            print(f'{li + 1:02}: {code.lines[li]}')
 
-        if M.is_running:
-            li = M.get_line_index()
-            if li:
-                print(f'{li + 1:02}: {code.lines[li]}')
+        M.step()
+        draw_robot()
+
+        if not M.is_running:
+            print(M.debug_status())
 
     canvas.after(TIME_STEP, tick)
 
