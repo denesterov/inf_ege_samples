@@ -13,7 +13,6 @@ class Command:
 class Code:
     def __init__(self, source_code: str):
         self.block, _ = self._parse_block([s.lower() for s in source_code.splitlines()], 0, 0)
-        self._dump_block(self.block)
 
 
     def _parse_block(self, source: list[str], block_indent, start_line):
@@ -55,6 +54,10 @@ class Code:
                 self._dump_block(c.block, base_indent + 2)
 
 
+    def dump_code(self):
+        self._dump_block(self.block)
+
+
 class Field:
     def __init__(self, text_data: str):
         lines = text_data.splitlines()
@@ -82,22 +85,20 @@ class Machine:
         ip: int
         is_cycle: bool
 
-    def __init__(self, field: Field):
-        self.code = []
-        self.x = 0
-        self.y = 0
-        self.dir_x = 0
-        self.dir_y = 1
-        self.field = field
-        self.is_running = False
-
-    def start(self, code: Code):
+    def __init__(self, code: Code, field: Field):
         self.stack = list[self.StackFrame]()
         self.code = code.block
         self.ip = 0
+        self.total_steps = 0
+
+        self.field = field
         self.x = self.field.start_x
         self.y = self.field.start_y
+        self.dir_x = 0
+        self.dir_y = 1
+
         self.is_running = True
+
 
     def step(self):
         if not self.is_running:
@@ -146,3 +147,10 @@ class Machine:
                     self.ip = 0
                 else:
                     self.ip += 1
+
+        self.total_steps += 1
+
+
+    def debug_status(self):
+        coords = f'Pos: ({self.x}, {self.y}), Dir: ({self.dir_x}, {self.dir_y})'
+        return '{coords}, Stack: {len(self.stack)}, Line: {self.code[self.ip].code_line}, Running: {self.is_running}'

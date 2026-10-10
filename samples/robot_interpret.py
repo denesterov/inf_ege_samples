@@ -2,14 +2,15 @@ from dataclasses import dataclass
 import tkinter as tk
 import robot_vm
 
+
 with open('robot.txt', encoding='utf-8') as f:
     code = robot_vm.Code(f.read())
+    code.dump_code()
 
 with open('robot_field.txt', encoding='utf-8') as f:
     field = robot_vm.Field(f.read())
 
-M = robot_vm.Machine(field)
-M.start(code)
+M = robot_vm.Machine(code, field)
 
 
 WIDTH = 1200
@@ -58,7 +59,7 @@ draw_robot()
 
 
 def tick():
-    print(f'X: {M.x}, Y: {M.y}, DX: {M.dir_x}, DY: {M.dir_y}, Stack len: {len(M.stack)}, Running: {M.is_running}')
+    print(M.debug_status())
     M.step()
     canvas.after(TIME_STEP, tick)
 
