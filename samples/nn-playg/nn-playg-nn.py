@@ -24,8 +24,8 @@ def lerp_rgb_color(r0, g0, b0, r1, g1, b1, s):
 
 class Net:
     INPUT = 2
-    LAYER1 = 10
-    LAYER2 = 6
+    LAYER1 = 3
+    LAYER2 = 3
     OUTPUT = 2
 
 
