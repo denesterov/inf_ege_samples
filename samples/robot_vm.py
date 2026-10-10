@@ -6,6 +6,7 @@ import tkinter as tk
 class Command:
     cmd: str
     args: str
+    code_line: int
     block: list = None
 
 
@@ -21,8 +22,9 @@ class Code:
         ln_idx = start_line
         while ln_idx < len(source):
             ln = source[ln_idx]
+            lnstr = ln.strip()
 
-            if len(ln.strip()) == 0:
+            if len(lnstr) == 0 or lnstr[0] == '#':
                 ln_idx += 1
                 continue
 
@@ -34,7 +36,7 @@ class Code:
 
             words = ln.split()
             args = ' '.join(words[1:])
-            cmd = Command(words[0], args)
+            cmd = Command(words[0], args, ln_idx)
 
             if cmd.cmd == 'если' or cmd.cmd == 'повтор':
                 cmd.block, ln_idx = self._parse_block(source, block_indent + 2, ln_idx + 1)
@@ -48,7 +50,7 @@ class Code:
 
     def _dump_block(self, commands: list[Command], base_indent = 0):
         for c in commands:
-            print(f'{' '*base_indent}{c.cmd}: {c.args}')
+            print(f'{c.code_line + 1:02}:{' '*base_indent}{c.cmd}{':' if c.args else ''} {c.args}')
             if c.block:
                 self._dump_block(c.block, base_indent + 2)
 
