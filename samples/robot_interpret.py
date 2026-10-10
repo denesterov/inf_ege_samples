@@ -59,8 +59,15 @@ draw_robot()
 
 
 def tick():
-    print(M.debug_status())
-    M.step()
+    if M.is_running:
+        M.step()
+        print(M.debug_status())
+
+        if M.is_running:
+            li = M.get_line_index()
+            if li:
+                print(f'{li + 1:02}: {code.lines[li]}')
+
     canvas.after(TIME_STEP, tick)
 
 

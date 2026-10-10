@@ -12,7 +12,8 @@ class Command:
 
 class Code:
     def __init__(self, source_code: str):
-        self.block, _ = self._parse_block([s.lower() for s in source_code.splitlines()], 0, 0)
+        self.lines = source_code.splitlines()
+        self.block, _ = self._parse_block([s.lower() for s in self.lines], 0, 0)
 
 
     def _parse_block(self, source: list[str], block_indent, start_line):
@@ -153,4 +154,13 @@ class Machine:
 
     def debug_status(self):
         coords = f'Pos: ({self.x}, {self.y}), Dir: ({self.dir_x}, {self.dir_y})'
-        return '{coords}, Stack: {len(self.stack)}, Line: {self.code[self.ip].code_line}, Running: {self.is_running}'
+        if self.is_running:
+            return f'{coords}, Stack: {len(self.stack)}, Line: {self.code[self.ip].code_line + 1}, Steps: {self.total_steps}'
+        else:
+            return f'{coords}, Steps: {self.total_steps}'
+
+
+    def get_line_index(self):
+        if self.is_running:
+            return self.code[self.ip].code_line
+        return None
