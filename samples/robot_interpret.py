@@ -59,7 +59,7 @@ def draw_robot():
     cx, cy = rx + c2, ry + c2
     dx, dy = M.dir_x * c2m, M.dir_y * c2m
 
-    robot_arr = canvas.create_line(cx - dx, cy - dy, cx + dx, cy + dy, arrow='last', fill='red', width=4)
+    robot_arr = canvas.create_line(cx - dx, cy + dy, cx + dx, cy - dy, arrow='last', fill='red', width=4)
 
 
 code_lines = {}
@@ -91,11 +91,27 @@ def update_current_code_line(line_idx:int):
     hilited_code_line = line_idx
 
 
+
+text_status = []
+
+def draw_status():
+    global text_status
+
+    for id in text_status:
+        canvas.delete(id)
+    text_status = []
+
+    x = BORDER + OUTER_MARGIN + XOFFSET
+    y = BORDER + OUTER_MARGIN + CELL * field.height + OUTER_MARGIN
+
+    text = M.debug_status()
+    text_status.append(canvas.create_text(x, y, text=text, font=CODE_FONT,  justify='left', anchor='nw'))
+
+
 def execute_one_step():
     if not M.is_running:
         return False
 
-    print(M.debug_status())
     li = M.get_line_index()
     if li:
         print(f'{li + 1:02}: {code.lines[li]}')
@@ -103,9 +119,7 @@ def execute_one_step():
 
     M.step()
     draw_robot()
-
-    if not M.is_running:
-        print(M.debug_status())
+    draw_status()
     return True
 
 
