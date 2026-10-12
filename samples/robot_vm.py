@@ -174,9 +174,9 @@ class Machine:
 
         dx, dy = (self.dir_x, self.dir_y)
         if 'слева' in condition:
-            dx, dy = -dy, -dx
+            dx, dy = +dy, -dx
         elif 'справа' in condition:
-            dx, dy = +dy, +dx
+            dx, dy = -dy, +dx
         inverse = 'занято' in condition
 
         result = self._cell_available(self.x + dx, self.y + dy)

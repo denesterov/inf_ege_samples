@@ -147,10 +147,23 @@ def on_button_one_step():
 button_onestep = tk.Button(root, text="Single Step", command=on_button_one_step)
 canvas.create_window(BORDER + OUTER_MARGIN + 100, HEIGHT - BORDER - OUTER_MARGIN, window=button_onestep, anchor="sw")
 
+
+def on_button_restart():
+    global M
+    M = robot_vm.Machine(code, field)
+    draw_robot()
+    draw_status()
+    draw_code_block(code.block, 0)
+    update_current_code_line()
+
+button_onestep = tk.Button(root, text="Restart", command=on_button_restart)
+canvas.create_window(BORDER + OUTER_MARGIN + 200, HEIGHT - BORDER - OUTER_MARGIN, window=button_onestep, anchor="sw")
+
 draw_robot()
 draw_status()
 draw_code_block(code.block, 0)
 update_current_code_line()
+
 canvas.after(TIME_STEP, tick)
 
 root.mainloop()
