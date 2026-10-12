@@ -59,7 +59,7 @@ def draw_robot():
     cx, cy = rx + c2, ry + c2
     dx, dy = M.dir_x * c2m, M.dir_y * c2m
 
-    robot_arr = canvas.create_line(cx - dx, cy + dy, cx + dx, cy - dy, arrow='last', fill='red', width=4)
+    robot_arr = canvas.create_line(cx - dx, cy - dy, cx + dx, cy + dy, arrow='last', fill='red', width=4)
 
 
 code_lines = {}
@@ -75,8 +75,13 @@ def draw_code_block(commands, base_indent):
             draw_code_block(c.block, base_indent + 2)
 
 
-def update_current_code_line(line_idx:int):
+def update_current_code_line():
     global hilited_code_line
+
+    line_idx = M.get_line_index()
+    if line_idx:
+        print(f'{line_idx + 1:02}: {code.lines[line_idx]}')
+
     if line_idx == hilited_code_line:
         return
 
@@ -112,14 +117,10 @@ def execute_one_step():
     if not M.is_running:
         return False
 
-    li = M.get_line_index()
-    if li:
-        print(f'{li + 1:02}: {code.lines[li]}')
-        update_current_code_line(li)
-
     M.step()
     draw_robot()
     draw_status()
+    update_current_code_line()
     return True
 
 
@@ -147,7 +148,9 @@ button_onestep = tk.Button(root, text="Single Step", command=on_button_one_step)
 canvas.create_window(BORDER + OUTER_MARGIN + 100, HEIGHT - BORDER - OUTER_MARGIN, window=button_onestep, anchor="sw")
 
 draw_robot()
+draw_status()
 draw_code_block(code.block, 0)
+update_current_code_line()
 canvas.after(TIME_STEP, tick)
 
 root.mainloop()

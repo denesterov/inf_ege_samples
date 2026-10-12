@@ -63,7 +63,7 @@ class Field:
     def __init__(self, text_data: str):
         lines = text_data.splitlines()
         self.field = {}
-        self.start_x, self.start_y = [int(s) for s in lines[0].split()]
+        self.start_x, self.start_y = [int(s) - 1 for s in lines[0].split()]
 
         height, width = 0, 0
         for ln in lines[1:]:
@@ -122,8 +122,11 @@ class Machine:
 
         cmd = self.code[self.ip]
         if cmd.cmd == 'шаг':
-            self.x += self.dir_x
-            self.y += self.dir_y
+            if not self._cell_available(self.x + self.dir_x, self.y + self.dir_y):
+                self._set_error('Collision')
+            else:
+                self.x += self.dir_x
+                self.y += self.dir_y
             self.ip += 1
         elif cmd.cmd == 'лево':
             self.dir_x, self.dir_y = self.dir_y, -self.dir_x
@@ -158,25 +161,32 @@ class Machine:
         self.total_steps += 1
 
 
+    def _cell_available(self, x, y):
+        if x < 0 or y < 0 or x >= self.field.width or y >= self.field.height:
+            return False
+
+        return self.field.field.get((x, y), '') != 'X'
+
+
     def _check_condition(self, condition):
         if condition not in Machine.CONDITIONS:
             return None
 
         dx, dy = (self.dir_x, self.dir_y)
         if 'слева' in condition:
-            dx, dy = dy, +dx
+            dx, dy = -dy, -dx
         elif 'справа' in condition:
-            dx, dy = -dy, dx
+            dx, dy = +dy, +dx
         inverse = 'занято' in condition
 
-        test = (self.x + dx, self.y + dy)
-        result = self.field.field.get(test, '') != 'X'
+        result = self._cell_available(self.x + dx, self.y + dy)
         return not result if inverse else result
 
 
     def _set_error(self, msg):
         self.is_running = False
         self.error_message = msg
+
 
     def debug_status(self):
         coords = f'Pos: ({self.x}, {self.y}), Dir: ({self.dir_x}, {self.dir_y})'
@@ -190,9 +200,8 @@ class Machine:
                 line = f'-'
 
         if self.is_running:
-            print(f'{self.ip} / {len(self.code)}')
             cond = '\n'.join([f'{c}: {self._check_condition(c)}' for c in Machine.CONDITIONS])
-            return f'{coords}, Line: {line}\nSteps: {self.total_steps}, Stack: {len(self.stack)}\n{cond}'
+            return f'{coords}, Line: {line}\nSteps: {self.total_steps}, Stack: {len(self.stack)}\nIP: {self.ip} / {len(self.code)}\n{cond}'
         elif self.error_message:
             return f'Error: {self.error_message}\n{coords}, Steps: {self.total_steps}'
         else:
