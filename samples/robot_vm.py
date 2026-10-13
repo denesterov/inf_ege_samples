@@ -60,10 +60,18 @@ class Code:
 
 
 class Field:
+    DIRS = { 'L': (-1, 0), 'R': (+1, 0), 'U': (0, -1), 'D': (0, +1) }
+
     def __init__(self, text_data: str):
         lines = text_data.splitlines()
         self.field = {}
-        self.start_x, self.start_y = [int(s) - 1 for s in lines[0].split()]
+        self.bonuses = []
+        self.start = None
+        self.finish = None
+        d = lines[0].strip()
+        if d not in Field.DIRS:
+            raise Exception(f'Направление может быть только таким: {Field.DIRS}')
+        self.start_dir = Field.DIRS[d]
 
         height, width = 0, 0
         for ln in lines[1:]:
@@ -71,10 +79,21 @@ class Field:
             if ln == '':
                 break
             for i, c in enumerate(ln):
-                if c == 'X':
-                    self.field[(i, height)] = 'X'
+                xy = (i, height)
+                if c == 'S':
+                    self.start = xy
+                elif c == 'X':
+                    self.field[xy] = 'X'
+                elif c == 'O':
+                    self.bonuses.append(xy)
+                elif c == 'E':
+                    self.finish = xy
+
             height += 1
             width = max(width, len(ln))
+
+        if not self.start:
+            raise Exception(f'В файле поля не задан старт')
 
         self.height, self.width = height, width
 
@@ -93,12 +112,12 @@ class Machine:
         self.code = code.block
         self.ip = 0
         self.total_steps = 0
+        self.bonus_score = 0
 
         self.field = field
-        self.x = self.field.start_x
-        self.y = self.field.start_y
-        self.dir_x = 0
-        self.dir_y = 1
+        (self.x, self.y) = self.field.start
+        (self.dir_x, self.dir_y) = self.field.start_dir
+        self.bonuses = self.field.bonuses
 
         self.is_running = True
         self.error_message = None
@@ -107,6 +126,7 @@ class Machine:
     def step(self):
         if not self.is_running:
             return
+
         while self.ip >= len(self.code):
             # end of block
             if len(self.stack) == 0:
@@ -167,6 +187,14 @@ class Machine:
 
         self.total_steps += 1
 
+        pos = (self.x, self.y)
+        if pos == self.field.finish:
+            self.is_running = False
+
+        if pos in self.bonuses:
+            self.bonuses.remove(pos)
+            self.bonus_score += 1
+
 
     def _cell_available(self, x, y):
         if x < 0 or y < 0 or x >= self.field.width or y >= self.field.height:
@@ -196,7 +224,7 @@ class Machine:
 
 
     def debug_status(self):
-        coords = f'Pos: ({self.x + 1}, {self.y + 1}), Dir: ({self.dir_x}, {self.dir_y})'
+        basics = f'Бонусов: {self.bonus_score}\nPos: ({self.x + 1}, {self.y + 1}), Dir: ({self.dir_x}, {self.dir_y})'
 
         if self.ip < len(self.code):
             line = self.code[self.ip].code_line + 1
@@ -208,11 +236,11 @@ class Machine:
 
         if self.is_running:
             cond = '\n'.join([f'{c}: {self._check_condition(c)}' for c in Machine.CONDITIONS])
-            return f'{coords}, Line: {line}\nSteps: {self.total_steps}, Stack: {len(self.stack)}\nIP: {self.ip} / {len(self.code)}\n{cond}'
+            return f'{basics}, Line: {line}\nSteps: {self.total_steps}, Stack: {len(self.stack)}\nIP: {self.ip} / {len(self.code)}\n{cond}'
         elif self.error_message:
-            return f'Error: {self.error_message}\n{coords}, Steps: {self.total_steps}'
+            return f'Ошибка: {self.error_message}\n{basics}, Steps: {self.total_steps}'
         else:
-            return f'Финиш.\n{coords}, Steps: {self.total_steps}'
+            return f'Финиш!\n{basics}, Steps: {self.total_steps}'
 
 
     def get_line_index(self):

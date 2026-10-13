@@ -17,34 +17,69 @@ WIDTH = 1200
 HEIGHT = 800
 BORDER = 50
 
+OUTER_MARGIN = 20
+CELL = 50
+MARGIN = 5
+MARGIN_O = 10
+XOFFSET = 500
+CODE_FONT = ('Courier', 12, 'bold')
+CODE_LINE_HEIGHT = 18
+
+TIME_STEP = 500
+TIME_STEP_FAST = 100
+
+
 root = tk.Tk()
 canvas = tk.Canvas(root, width=WIDTH, height=HEIGHT, bg='white')
 canvas.pack(side='top', fill='both', expand=True)
 
 canvas.create_rectangle(BORDER, BORDER, WIDTH - BORDER, HEIGHT - BORDER, fill='lightgray', outline='black')
 
-OUTER_MARGIN = 20
-CELL = 50
-MARGIN = 5
-XOFFSET = 500
-CODE_FONT = ('Courier', 12, 'bold')
-CODE_LINE_HEIGHT = 18
 
-TIME_STEP = 500
-TIME_STEP_FAST = 200
+def _get_cell_rect(ix, iy, margin = MARGIN):
+    x1 = BORDER + XOFFSET + OUTER_MARGIN + ix * CELL + margin
+    y1 = BORDER + OUTER_MARGIN + iy * CELL + margin
+    x2 = x1 + CELL - margin * 2
+    y2 = y1 + CELL - margin * 2
+    return (x1, y1, x2, y2)
 
-rects = {}
-for row in range(field.height):
-    for column in range(field.width):
-        x1 = BORDER + XOFFSET + OUTER_MARGIN + column * CELL + MARGIN
-        y1 = BORDER + OUTER_MARGIN + row * CELL + MARGIN
-        x2 = x1 + CELL - MARGIN * 2
-        y2 = y1 + CELL - MARGIN * 2
-        if field.field.get((column, row), '') == 'X':
-            fill = 'white'
-        else:
-            fill = 'darkgray'
-        rects[(column, row)] = canvas.create_rectangle(x1, y1, x2, y2, fill=fill, outline='')
+
+def _get_cell_center(ix, iy):
+    x1, y1, x2, y2 = _get_cell_rect(ix, iy)
+    return (x1 + x2) // 2, (y1 + y2) // 2
+
+
+field_vis = {}
+def draw_field():
+    global field_vis
+    for row in range(field.height):
+        for column in range(field.width):
+            rect = _get_cell_rect(column, row)
+            if field.field.get((column, row), '') == 'X':
+                fill = 'white'
+            else:
+                fill = 'darkgray'
+            field_vis[(column, row)] = canvas.create_rectangle(*rect, fill=fill, outline='')
+
+    field_vis['S'] = canvas.create_oval(*_get_cell_rect(*field.start, MARGIN_O), fill='grey20', outline='')
+    if field.finish:
+        field_vis['F'] = canvas.create_oval(*_get_cell_rect(*field.finish, MARGIN_O), fill='red', outline='')
+
+    draw_bonuses()
+
+
+def draw_bonuses():
+    global field_vis
+
+    for id, tk_id in field_vis.items():
+        if type(id) is str and id.startswith('Bonus'):
+            canvas.delete(tk_id)
+
+    for i, bonus in enumerate(field.bonuses):
+        field_vis[f'Bonus{i}'] = canvas.create_oval(*_get_cell_rect(*bonus, MARGIN_O), fill='orange', outline='')
+
+
+draw_field()
 
 
 robot_arr = None
@@ -53,10 +88,8 @@ robot_last_pos = None
 
 
 def _add_robot_visual(x, y, dx, dy, trace=False):
-    c2 = CELL // 2
-    c2m = c2 - MARGIN * 2
-    rx, ry = BORDER + XOFFSET + OUTER_MARGIN + x * CELL, BORDER + OUTER_MARGIN + y * CELL
-    cx, cy = rx + c2, ry + c2
+    c2m = CELL // 2 - MARGIN_O
+    cx, cy = _get_cell_center(x, y)
     dx, dy = dx * c2m, dy * c2m
 
     color = 'light green' if trace else 'green'
@@ -82,7 +115,6 @@ def draw_robot():
         canvas.delete(tk_id)
     if len(robot_trace) >= 10:
         robot_trace = robot_trace[-10:]
-
 
 
 code_lines = {}
@@ -143,6 +175,7 @@ def execute_one_step():
 
     M.step()
     draw_robot()
+    draw_bonuses()
     draw_status()
     update_current_code_line()
     return True
