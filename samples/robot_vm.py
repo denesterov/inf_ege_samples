@@ -107,7 +107,7 @@ class Machine:
     def step(self):
         if not self.is_running:
             return
-        if self.ip >= len(self.code):
+        while self.ip >= len(self.code):
             # end of block
             if len(self.stack) == 0:
                 self.is_running = False
@@ -115,6 +115,7 @@ class Machine:
             frame = self.stack[-1]
             if frame.is_cycle: # just repeat
                 self.ip = 0
+                break
             else:
                 self.stack.pop()
                 self.code = frame.code
@@ -139,16 +140,15 @@ class Machine:
             self.code = cmd.block
             self.ip = 0
         elif cmd.cmd == 'выход':
-            # TODO
-            if len(self.stack) == 0:
+            while len(self.stack) > 0:
+                stack_top = self.stack.pop()
+                if stack_top.is_cycle:
+                    self.code = stack_top.code # WRONG
+                    self.ip = stack_top.ip
+                    break
+            else:
                 self._set_error(f'Команда "выход" без "повтора"')
                 return
-            while len(self.stack) > 0:
-                if self.stack[-1].is_cycle:
-                    self.code = self.stack[-1].code # WRONG
-                    self.ip = self.stack[-1].ip
-                    break
-                self.stack.pop()
         elif cmd.cmd == 'если':
             cond = self._check_condition(cmd.args)
             if cond is None:
@@ -196,7 +196,7 @@ class Machine:
 
 
     def debug_status(self):
-        coords = f'Pos: ({self.x}, {self.y}), Dir: ({self.dir_x}, {self.dir_y})'
+        coords = f'Pos: ({self.x + 1}, {self.y + 1}), Dir: ({self.dir_x}, {self.dir_y})'
 
         if self.ip < len(self.code):
             line = self.code[self.ip].code_line + 1
@@ -212,7 +212,7 @@ class Machine:
         elif self.error_message:
             return f'Error: {self.error_message}\n{coords}, Steps: {self.total_steps}'
         else:
-            return f'{coords}, Steps: {self.total_steps}'
+            return f'Финиш.\n{coords}, Steps: {self.total_steps}'
 
 
     def get_line_index(self):
