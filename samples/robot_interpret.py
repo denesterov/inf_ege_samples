@@ -110,7 +110,8 @@ def draw_status():
     y = BORDER + OUTER_MARGIN + CELL * field.height + OUTER_MARGIN
 
     text = M.debug_status()
-    text_status.append(canvas.create_text(x, y, text=text, font=CODE_FONT,  justify='left', anchor='nw'))
+    color = 'red' if M.error_message else 'black'
+    text_status.append(canvas.create_text(x, y, text=text, fill=color, font=CODE_FONT,  justify='left', anchor='nw'))
 
 
 def execute_one_step():

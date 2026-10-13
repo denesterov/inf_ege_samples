@@ -123,7 +123,7 @@ class Machine:
         cmd = self.code[self.ip]
         if cmd.cmd == 'шаг':
             if not self._cell_available(self.x + self.dir_x, self.y + self.dir_y):
-                self._set_error('Collision')
+                self._set_error('Столкновение!')
             else:
                 self.x += self.dir_x
                 self.y += self.dir_y
@@ -140,15 +140,19 @@ class Machine:
             self.ip = 0
         elif cmd.cmd == 'выход':
             # TODO
+            if len(self.stack) == 0:
+                self._set_error(f'Команда "выход" без "повтора"')
+                return
             while len(self.stack) > 0:
                 if self.stack[-1].is_cycle:
                     self.code = self.stack[-1].code # WRONG
                     self.ip = self.stack[-1].ip
+                    break
                 self.stack.pop()
         elif cmd.cmd == 'если':
             cond = self._check_condition(cmd.args)
             if cond is None:
-                self._set_error(f'Unknown if condition {cmd.args}')
+                self._set_error(f'Неизвестное условие "{cmd.args}"')
                 return
 
             if cond:
@@ -157,6 +161,9 @@ class Machine:
                 self.ip = 0
             else:
                 self.ip += 1
+        else:
+            self._set_error(f'Неизвестная команда "{cmd.cmd}"')
+            return
 
         self.total_steps += 1
 
