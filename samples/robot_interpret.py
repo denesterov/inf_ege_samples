@@ -48,19 +48,41 @@ for row in range(field.height):
 
 
 robot_arr = None
+robot_trace = []
+robot_last_pos = None
+
+
+def _add_robot_visual(x, y, dx, dy, trace=False):
+    c2 = CELL // 2
+    c2m = c2 - MARGIN * 2
+    rx, ry = BORDER + XOFFSET + OUTER_MARGIN + x * CELL, BORDER + OUTER_MARGIN + y * CELL
+    cx, cy = rx + c2, ry + c2
+    dx, dy = dx * c2m, dy * c2m
+
+    color = 'light green' if trace else 'green'
+    width = 3 if trace else 6
+    return canvas.create_line(cx - dx, cy - dy, cx + dx, cy + dy, arrow='last', fill=color, width=width)
+
 
 def draw_robot():
     global robot_arr
     if robot_arr:
         canvas.delete(robot_arr)
 
-    c2 = CELL // 2
-    c2m = c2 - MARGIN * 2
-    rx, ry = BORDER + XOFFSET + OUTER_MARGIN + M.x * CELL, BORDER + OUTER_MARGIN + M.y * CELL
-    cx, cy = rx + c2, ry + c2
-    dx, dy = M.dir_x * c2m, M.dir_y * c2m
+    global robot_last_pos, robot_trace
+    pos = (M.x, M.y, M.dir_x, M.dir_y)
+    if robot_last_pos != pos:
+        if robot_last_pos:
+            robot_trace.append(_add_robot_visual(*robot_last_pos, True))
+        robot_last_pos = pos
 
-    robot_arr = canvas.create_line(cx - dx, cy - dy, cx + dx, cy + dy, arrow='last', fill='red', width=4)
+    robot_arr = _add_robot_visual(*pos)
+
+    for tk_id in robot_trace[:-10]:
+        canvas.delete(tk_id)
+    if len(robot_trace) >= 10:
+        robot_trace = robot_trace[-10:]
+
 
 
 code_lines = {}
