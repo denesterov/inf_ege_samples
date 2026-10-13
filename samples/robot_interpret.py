@@ -31,6 +31,7 @@ CODE_FONT = ('Courier', 12, 'bold')
 CODE_LINE_HEIGHT = 18
 
 TIME_STEP = 500
+TIME_STEP_FAST = 200
 
 rects = {}
 for row in range(field.height):
@@ -129,7 +130,7 @@ def tick():
     if playback_on:
         execute_one_step()
 
-    canvas.after(TIME_STEP, tick)
+    canvas.after(TIME_STEP_FAST if button_speed_var.get() else TIME_STEP, tick)
 
 
 def on_button_startstop():
@@ -151,6 +152,8 @@ canvas.create_window(BORDER + OUTER_MARGIN + 100, HEIGHT - BORDER - OUTER_MARGIN
 
 def on_button_restart():
     global M
+    global playback_on
+    playback_on = False
     M = robot_vm.Machine(code, field)
     draw_robot()
     draw_status()
@@ -159,6 +162,12 @@ def on_button_restart():
 
 button_onestep = tk.Button(root, text="Restart", command=on_button_restart)
 canvas.create_window(BORDER + OUTER_MARGIN + 200, HEIGHT - BORDER - OUTER_MARGIN, window=button_onestep, anchor="sw")
+
+
+button_speed_var = tk.IntVar()
+button_speed = tk.Checkbutton(root, text="Faster", variable=button_speed_var)
+canvas.create_window(BORDER + OUTER_MARGIN + 300, HEIGHT - BORDER - OUTER_MARGIN, window=button_speed, anchor="sw")
+
 
 draw_robot()
 draw_status()
