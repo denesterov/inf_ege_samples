@@ -23,7 +23,8 @@
   }
   #leftPanel { display: flex; flex-direction: column; gap: 8px; width: 360px; }
   #codeArea {
-    width: 100%; height: 420px;
+    width: 100%;
+    height: 420px;
     font-family: 'Courier New', monospace;
     font-size: 13px;
     line-height: 18px;
@@ -42,7 +43,8 @@
     line-height: 18px;
     white-space: pre;
     overflow: auto;
-    max-height: 150px;
+    height: 500px;
+    max-height: 800px;
     border: 1px solid #c8cdd2;
     border-radius: 4px;
     background: #fafbfc;
@@ -112,23 +114,22 @@
   <div class="row">
     <strong style="font-size:14px">Программа робота</strong>
     <span style="flex:1"></span>
-    <button id="btnReset" title="Сбросить выполнение, стереть следы, вернуть бонусы">Сброс</button>
   </div>
-  <textarea id="codeArea" spellcheck="false"></textarea>
   <div id="codeLines"></div>
   <div class="controls">
     <button id="btnStartStop">▶ Пуск</button>
     <button id="btnStep">Шаг</button>
-    <button id="btnReset2">Сброс</button>
+    <button id="btnReset" title="Сбросить выполнение, стереть следы, вернуть бонусы">Сброс</button>
     <label class="chk"><input type="checkbox" id="chkFast"> Быстрее</label>
   </div>
-  <div id="status">Готов</div>
+  <textarea id="codeArea" spellcheck="false"></textarea>
 </div>
 
 <div id="rightPanel">
   <div class="row">
     <div id="fieldWrap" class="panel">
       <canvas id="fieldCanvas"></canvas>
+      <div id="status">Готов</div>
     </div>
     <div id="hint" class="panel">
       <h4>Команды</h4>

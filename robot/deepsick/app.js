@@ -247,26 +247,6 @@ const defaultCode = `# идем вперед до ближайшей стены.
   если занято
     выход
   шаг
-
-# добиваемся, что бы по правую руку оказалась стена
-повтор
-  если занято справа
-    выход
-  право
-
-# обход лабиринта
-повтор
-  повтор
-    если занято справа
-      выход
-    право
-    шаг
-
-  если св
-    шаг
-  если занято
-    если занято справа
-      лево
 `;
 
 const defaultField = `D
@@ -289,7 +269,6 @@ const counterSpan = document.getElementById('counter');
 const btnStartStop = document.getElementById('btnStartStop');
 const btnStep = document.getElementById('btnStep');
 const btnReset = document.getElementById('btnReset');
-const btnReset2 = document.getElementById('btnReset2');
 const btnCopyField = document.getElementById('btnCopyField');
 const btnPasteField = document.getElementById('btnPasteField');
 const btnRotate = document.getElementById('btnRotate');
@@ -642,7 +621,6 @@ function doReset() {
 }
 
 btnReset.addEventListener('click', doReset);
-btnReset2.addEventListener('click', doReset);
 
 btnRotate.addEventListener('click', function () {
   if (!M) return;
